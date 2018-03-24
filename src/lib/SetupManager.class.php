@@ -2,11 +2,6 @@
 
 class SetupManager {
 
-  // Cache root_dir because calling realpath a lot of times -can- cause some slowness
-  private static $root_dir = null;
-
-  const TEMP_DIR_NAME = 'tmp';
-  const OUT_DIR_NAME = 'compiled';
 
   /**
   * Checks the setup of the project and creates any missing directories
@@ -18,14 +13,14 @@ class SetupManager {
   */
   public static function checkProject($create_missing = true)
   {
-    if (static::getRootDirectory() === null) {
+    if (FileManager::getRootDirectory() === null) {
       throw new Exception('Unable to get root directory, something is terribly wrong (getRootDirectory returned null)');
     }
 
     $errors = array();
     $directories_needed = array(
-      static::getTempDirectory(),
-      static::getOutputDirectory(),
+      FileManager::getTempDirectory(),
+      FileManager::getOutputDirectory(),
     );
 
     foreach ($directories_needed as $directory_needed) {
@@ -52,7 +47,7 @@ class SetupManager {
     );
 
     foreach ($required_files as $required_file) {
-      $filename = static::getRootDirectory() . DIRECTORY_SEPARATOR . $required_file;
+      $filename = FileManager::getRootDirectory() . DIRECTORY_SEPARATOR . $required_file;
       if (!is_readable($filename)) {
         echo $filename . ' is not readable, checking if it exists';
         $status = 'File exists, check read permissions on file';
@@ -64,7 +59,6 @@ class SetupManager {
       }
     }
 
-
     if (!empty($errors)) {
       //TODO outputting of errors
       return false;
@@ -72,38 +66,5 @@ class SetupManager {
 
     return true;
   }
-
-  /**
-  * @return null|string
-  */
-  public static function getRootDirectory()
-  {
-    if (static::$root_dir === null) {
-      static::$root_dir = realpath(implode(DIRECTORY_SEPARATOR, array(
-        __DIR__,
-        '..',
-        '..',
-      )));
-    }
-
-    return static::$root_dir;
-  }
-
-  /**
-  * @return string
-  */
-  public static function getOutputDirectory()
-  {
-    return static::getRootDirectory() . DIRECTORY_SEPARATOR . SetupManager::OUT_DIR_NAME;
-  }
-
-  /**
-  * @return string
-  */
-  public static function getTempDirectory()
-  {
-    return static::getRootDirectory() . DIRECTORY_SEPARATOR . SetupManager::TEMP_DIR_NAME;
-  }
-
 
 }
