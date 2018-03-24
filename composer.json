@@ -9,5 +9,8 @@
             "email": "thataddress@protonmail.com"
         }
     ],
-    "require": {}
+    "require": {},
+    "autoload": {
+      "classmap": ["src/lib"]
+    }
 }
