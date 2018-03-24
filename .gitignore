@@ -1,1 +1,4 @@
 /vendor/
+blocklist-in.list
+blocklist-manual.list
+whitelist-manual.list
