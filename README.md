@@ -10,8 +10,8 @@ I thought about having the list stored locally on the pihole, but some people ru
 
 ## How to use
  - Fork this project
- - Add the urls to `blocklist-in.list` that you want to pull lists from
- - Add any custom urls to your block list to `blocklist-manual.list`
+ - Add the urls to `blacklist-in.list` that you want to pull lists from
+ - Add any custom urls to your block list to `blacklist-manual.list`
  - Add any whitelist urls/domains to `whitelist-manual.list`
  - Run `make blacklist`
  - Push the blacklist to your repo (the diff should be kind of cool)

@@ -1,4 +1,4 @@
 /vendor/
-blocklist-in.list
-blocklist-manual.list
+blacklist-in.list
+blacklist-manual.list
 whitelist-manual.list
