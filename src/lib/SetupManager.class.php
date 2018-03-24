@@ -3,10 +3,11 @@
 class SetupManager {
 
   // Cache root_dir because calling realpath a lot of times -can- cause some slowness
-  private $root_dir = null;
+  private static $root_dir = null;
 
   const TEMP_DIR_NAME = 'tmp';
   const OUT_DIR_NAME = 'compiled';
+
   /**
   * Checks the setup of the project and creates any missing directories
   * Returns true on successfully setup project, false if otherwise
@@ -15,16 +16,16 @@ class SetupManager {
   *
   * @return bool
   */
-  public function checkProject($create_missing_directories = true)
+  public static function checkProject($create_missing_directories = true)
   {
-    if ($this->getRootDirectory() === null) {
+    if (static::getRootDirectory() === null) {
       throw new Exception('Unable to get root directory, something is terribly wrong (getRootDirectory returned null)');
     }
 
     $errors = array();
     $directories_needed = array(
-      $this->getTempDirectory(),
-      $this->getOutputDirectory(),
+      static::getTempDirectory(),
+      static::getOutputDirectory(),
     );
 
     foreach ($directories_needed as $directory_needed) {
@@ -51,33 +52,33 @@ class SetupManager {
   /**
   * @return null|string
   */
-  public function getRootDirectory()
+  public static function getRootDirectory()
   {
-    if ($this->root_dir === null) {
-      $this->root_dir = realpath(implode(DIRECTORY_SEPARATOR, array(
+    if (static::$root_dir === null) {
+      static::$root_dir = realpath(implode(DIRECTORY_SEPARATOR, array(
         __DIR__,
         '..',
         '..',
       )));
     }
 
-    return $this->root_dir;
+    return static::$root_dir;
   }
 
   /**
   * @return string
   */
-  public function getOutputDirectory()
+  public static function getOutputDirectory()
   {
-    return $this->getRootDirectory() . DIRECTORY_SEPARATOR . SetupManager::OUT_DIR_NAME;
+    return static::getRootDirectory() . DIRECTORY_SEPARATOR . SetupManager::OUT_DIR_NAME;
   }
 
   /**
   * @return string
   */
-  public function getTempDirectory()
+  public static function getTempDirectory()
   {
-    return $this->getRootDirectory() . DIRECTORY_SEPARATOR . SetupManager::TEMP_DIR_NAME;
+    return static::getRootDirectory() . DIRECTORY_SEPARATOR . SetupManager::TEMP_DIR_NAME;
   }
 
 

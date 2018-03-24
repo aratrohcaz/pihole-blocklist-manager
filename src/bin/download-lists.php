@@ -8,7 +8,7 @@ require_once implode(DIRECTORY_SEPARATOR, array(
 ));
 
 // TODO move this?
-$setup = new SetupManager();
-if (!$setup->checkProject( true)) {
+
+if (!SetupManager::checkProject( true)) {
   exit(1);
 }
