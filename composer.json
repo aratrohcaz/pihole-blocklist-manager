@@ -1,0 +1,13 @@
+{
+    "name": "aratrohcaz/pihole-blocklist-manager",
+    "description": "Manages multiple blacklists and whitelists into a single file/repo",
+    "type": "project",
+    "license": "gpl-3.0",
+    "authors": [
+        {
+            "name": "aratrohcaz",
+            "email": "thataddress@protonmail.com"
+        }
+    ],
+    "require": {}
+}
