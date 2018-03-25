@@ -2,11 +2,15 @@
 -----------------------------------
 
 ## Preface
-Ok, so, this is a work in progress, essentially a very simple system for collating your lists and to reduce the amount of entries/work that pihole has to do.
+Ok, so, this is a work in progress, essentially a very simple system for collating your lists and to reduce the amount
+of entries/work that pihole has to do.
 
-I'm running php7.0 but am writing this in mind to run on most php versions and trying to keep dependancies as minimal as possible, so bear with me.
+I'm running php7.0 but am writing this in mind to run on most php versions and trying to keep dependancies as minimal
+as possible, so bear with me. This mean nicities such as guzzle have been avoided (for the time being), and using 
+`file_get_contents` has also been avoided as some people may not have the `allow_fopen` ini setting set.
 
-I thought about having the list stored locally on the pihole, but some people run multiple pi-holes, and manage others. This gives an easier method/way to manage them all/keep them in sync (in theory, I haven't tested this yet)
+I thought about having the list stored locally on the pihole, but some people run multiple pi-holes, and manage others.
+This gives an easier method/way to manage them all/keep them in sync (in theory, I haven't tested this yet)
 
 ## How to use
  - Fork this project
