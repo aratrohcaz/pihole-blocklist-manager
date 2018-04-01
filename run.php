@@ -117,7 +117,6 @@
           $line = array_pop($parts);
         }
         $hash = md5($line);
-        // TODO actually use the stats to give something to the user?
         if (!isset($deduplicated_records[$hash])) {
           $deduplicated_records[$hash] = array('hits' => 0, 'url' => $line);
         }
