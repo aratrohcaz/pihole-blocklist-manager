@@ -17,11 +17,14 @@
    * 7 - custom (sic. user set-able) backup timestamp format
    * 8 - a way to purge the temp directory and refresh all lists
    * 9 - An option to skip downloading files
+   * 10 - testing of the urls to see if they resolve (issue if the URLs become active again, may/may not be ads at a
+   * later point.)
    */
 
   #region Rudimentary settings area
-  $timestamp      = date('Ymd_his');
-  $do_downloading = true;
+  $timestamp        = date('Ymd_his');
+  $output_file_name = 'compiled.txt';
+  $do_downloading   = false;
   #endregion Rudimentary settings area
 
   printLog('info', 'Backup file Timestamp is ' . $timestamp);
@@ -47,7 +50,6 @@
   }
 
   $config = parse_ini_file($config_file, true);
-//  print_r($config);
 
   // Download lists
   $downloaded_files = array();
@@ -79,16 +81,14 @@
 
   printLog('info', 'Downloaded ' . $downloaded_count . ' file' . ($downloaded_count > 1 ? 's' : '') . ', ' . $existing_count . ' in temp directory, totalling ' . ($downloaded_count + $existing_count) . 'lists');
   printLog('info', 'Combining lists and de-duplicating..');
-//  print_r($existing_files);
-//  print_r($downloaded_files);
 
   $parse_files     = array_unique(array_merge($downloaded_files, $existing_files));
   $number_of_files = count($parse_files);
   printLog('info', 'Reduced lists to ' . $number_of_files . ' entr' . ($number_of_files > 1 ? 'ies' : 'y'));
 
   printLog('notice', 'Combining all entries into a single file for sorting');
-  $parse_ctr      = 0;
-  $output_records = array();
+  $parse_ctr            = 0;
+  $deduplicated_records = array();
 
   $comment_chars = array('#', ';');
   printLog('info', 'Will be skipping lines starting with ' . implode(',', $comment_chars));
@@ -97,27 +97,49 @@
     $parse_ctr++;
     // This is where it would regex out the 0.0.0.0 from host files (potentially also remove the http[s]:// from the front if present
     $lines = file($parse_file, FILE_SKIP_EMPTY_LINES | FILE_IGNORE_NEW_LINES);
-    printLog('debug', sprintf('Loaded \'%s\', has %d lines', $parse_file, count($lines)));
+    printLog('debug', sprintf('Loaded \'%s\', has %d lines (inc. commentds)', $parse_file, count($lines)));
     $non_comment_lines = 0;
     foreach ($lines as $line) {
       $first_char = substr(trim($line), 0, 1);
       if (!in_array($first_char, $comment_chars)) {
         $non_comment_lines++;
         $hash = md5($line);
-        if (!isset($output_records[$hash])) {
-          $output_records[$hash] = array('hits' => 0, 'url' => $line);
+        if (!isset($deduplicated_records[$hash])) {
+          $deduplicated_records[$hash] = array('hits' => 0, 'url' => $line);
         }
-        $output_records[$hash]['hits']++;
+        $deduplicated_records[$hash]['hits']++;
       }
     }
-    printLog('progress', sprintf('Working on %s of %s (%d unique lines)', $parse_ctr, $number_of_files, count($output_records)));
+    printLog('progress', sprintf('Processed %s of %s (%d lines added)', $parse_ctr, $number_of_files, $non_comment_lines));
   }
 
-  // Combine files
+  // Combine files / Gather stats
+//  print_r($output_records);
+  printLog('info', 'Narrowed lists down to ' . count($deduplicated_records) . ' records');
+  $full_path = $out_dir . DIRECTORY_SEPARATOR . $output_file_name;
+  printLog('info', 'Creating single file (' . $full_path . ')');
+
+  $header       = array(
+    '################################################################### ',
+    '# File made by pihole-blocklist-manager as ' . date('Y-m-d H:i.s'),
+    '# Built from ' . $number_of_files . ' files, totaling ~' . count($deduplicated_records) . ' lines parsed',
+    '################################################################### ',
+    '',
+    '',
+  );
+  $output_lines = array();
+  // could be array walk?
+  foreach ($deduplicated_records as $deduplicated_record) {
+    $output_lines[] = $deduplicated_record['url'];
+  }
+
+  sort($output_lines); // sort the output array
+
+  file_put_contents($full_path, implode(PHP_EOL, $header));
+  file_put_contents($full_path, implode(PHP_EOL, $output_lines), FILE_APPEND);
 
 
   printLog('info', 'Done!');
-
 
   #region Handy Functions
   /**
@@ -136,6 +158,10 @@
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
     curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+    // Seem to be having issues getting from raw.githug
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+
     $data      = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
