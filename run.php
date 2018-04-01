@@ -20,12 +20,13 @@
    * 10 - testing of the urls (from the list) to see if they resolve (issue if the URLs become active again, may/may
    * not be ads at a later point.)
    * 11 - add format choice (host file format (ip domain) or domain list)
+   * 12 - Info about how many lines had been saved
    */
 
   #region Rudimentary settings area
   $timestamp        = date('Ymd_his');
   $output_file_name = 'compiled.txt';
-  $do_downloading   = false;
+  $do_downloading   = true;
   #endregion Rudimentary settings area
 
   printLog('info', 'Backup file Timestamp is ' . $timestamp);
@@ -111,6 +112,7 @@
           $line = array_shift($parts);
         }
         $hash = md5($line);
+        // TODO actually use the stats to give something to the user?
         if (!isset($deduplicated_records[$hash])) {
           $deduplicated_records[$hash] = array('hits' => 0, 'url' => $line);
         }
@@ -139,8 +141,44 @@
   foreach ($deduplicated_records as $deduplicated_record) {
     $output_lines[] = $deduplicated_record['url'];
   }
-
   sort($output_lines); // sort the output array
+  #region Adding Blacklist Domains
+  if (isset($config['blacklist-domains']) && count($config['blacklist-domains'])) {
+    printLog('info', 'Adding user blacklisted domains');
+    $current_lines = array_flip($output_lines); // isset / key look ups are faster than searches
+    foreach ($config['blacklist-domains'] as $blacklist_key => $blacklist_domain) {
+      $blacklist_domain = trim($blacklist_domain);
+      $message_part     = 'already';
+      $message          = 'Domain ' . $blacklist_domain . ' %s blacklisted';
+      if (!isset($current_lines[$blacklist_domain])) {
+        $output_lines[] = $blacklist_domain; // we add it onto the original list
+        $message_part   = 'is now';
+      }
+      printLog('blk-dom', sprintf($message, $message_part));
+    }
+    sort($output_lines);
+  }
+  #endregion Adding Blacklist Domains
+
+  #region Removing whitelisted domains
+  if (isset($config['whitelist-domains']) && count($config['whitelist-domains'])) {
+    printLog('info', 'Adding user blacklisted domains');
+    $current_lines = array_flip($output_lines); // isset / key look ups are faster than searches
+    foreach ($config['whitelist-domains'] as $whitelist_key => $whitelist_domain) {
+      $whitelist_domain = trim($whitelist_domain);
+      $message_part     = 'not present in list';
+      $message          = 'Domain ' . $whitelist_domain . ' %s';
+      if (isset($current_lines[$whitelist_domain])) {
+        $position = $current_lines[$whitelist_domain];
+        unset($output_lines[$position]);
+        $message_part = 'has been removed (from position ' . $position . ')';
+      }
+      printLog('blk-dom', sprintf($message, $message_part));
+    }
+    // no need to sort here, as we'd still be in order, just missing a few entries
+  }
+  #region Removing whitelisted domains
+
 
   file_put_contents($full_path, implode(PHP_EOL, $header));
   file_put_contents($full_path, implode(PHP_EOL, $output_lines), FILE_APPEND);
