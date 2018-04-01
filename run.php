@@ -17,8 +17,9 @@
    * 7 - custom (sic. user set-able) backup timestamp format
    * 8 - a way to purge the temp directory and refresh all lists
    * 9 - An option to skip downloading files
-   * 10 - testing of the urls to see if they resolve (issue if the URLs become active again, may/may not be ads at a
-   * later point.)
+   * 10 - testing of the urls (from the list) to see if they resolve (issue if the URLs become active again, may/may
+   * not be ads at a later point.)
+   * 11 - add format choice (host file format (ip domain) or domain list)
    */
 
   #region Rudimentary settings area
@@ -56,7 +57,7 @@
   if ($do_downloading && isset($config['blacklist-urls'])) {
     $num_urls     = count($config['blacklist-urls']);
     $download_ctr = 0;
-    printLog('info', 'Found ' . $num_urls . 'URL' . ($num_urls > 1 ? 's' : ''));
+    printLog('info', 'Found ' . $num_urls . ' URL' . ($num_urls > 1 ? 's' : ''));
     foreach ($config['blacklist-urls'] as $url_key => $blacklist_url) {
       $download_ctr++;
       printLog('debug', 'Working on ' . $download_ctr . ' of ' . $num_urls);
@@ -103,6 +104,12 @@
       $first_char = substr(trim($line), 0, 1);
       if (!in_array($first_char, $comment_chars)) {
         $non_comment_lines++;
+        // check if it is in hosts file format and remove the ip prefix from the front - we're going to cheat, because
+        // we know it will contain a space, so we'll explode on that and use the last part which should be the domain
+        $parts = explode(' ', $line);
+        if (count($parts) > 1) {
+          $line = array_shift($parts);
+        }
         $hash = md5($line);
         if (!isset($deduplicated_records[$hash])) {
           $deduplicated_records[$hash] = array('hits' => 0, 'url' => $line);
@@ -122,7 +129,7 @@
   $header       = array(
     '################################################################### ',
     '# File made by pihole-blocklist-manager as ' . date('Y-m-d H:i.s'),
-    '# Built from ' . $number_of_files . ' files, totaling ~' . count($deduplicated_records) . ' lines parsed',
+    '# Built from ' . $number_of_files . ' files, ~' . count($deduplicated_records) . ' lines parsed',
     '################################################################### ',
     '',
     '',
@@ -144,11 +151,12 @@
   #region Handy Functions
   /**
    * @param     $url
-   * @param int $timeout
+   * @param int $conn_timeout        Timeout to establish the connection
+   * @param int $transaction_timeout Timeout for the transfer time (too long to get all data)
    *
    * @return bool|mixed
    */
-  function getUrlContent($url, $timeout = 5)
+  function getUrlContent($url, $conn_timeout = 5, $transaction_timeout = 600)
   {
     printLog('curl', 'Attempting to fetch \'' . $url . '\'');
 
@@ -156,9 +164,9 @@
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-    // Seem to be having issues getting from raw.githug
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $conn_timeout);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $transaction_timeout);
+
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 
