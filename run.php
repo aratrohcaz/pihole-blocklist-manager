@@ -53,7 +53,7 @@
 
   $config = parse_ini_file($config_file, true);
 
-  // Download lists
+  #region Downloading lists
   $downloaded_files = array();
   if ($do_downloading && isset($config['blacklist-urls'])) {
     $num_urls     = count($config['blacklist-urls']);
@@ -76,17 +76,21 @@
       }
     }
   }
-
-  $existing_files   = glob($temp_dir . DIRECTORY_SEPARATOR . '*.list');
   $downloaded_count = count($downloaded_files);
-  $existing_count   = count($existing_files);
+  printLog('info', sprintf('Downloaded %d file%s',
+      $downloaded_count,
+      ($downloaded_count > 1 ? 's' : '')
+    )
+  );
+  #endregion Downloading lists
 
-  printLog('info', 'Downloaded ' . $downloaded_count . ' file' . ($downloaded_count > 1 ? 's' : '') . ', ' . $existing_count . ' in temp directory, totalling ' . ($downloaded_count + $existing_count) . 'lists');
+  #region Parsing Files
   printLog('info', 'Combining lists and de-duplicating..');
 
+  $existing_files  = glob($temp_dir . DIRECTORY_SEPARATOR . '*.list');
   $parse_files     = array_unique(array_merge($downloaded_files, $existing_files));
   $number_of_files = count($parse_files);
-  printLog('info', 'Reduced lists to ' . $number_of_files . ' entr' . ($number_of_files > 1 ? 'ies' : 'y'));
+  printLog('stats', 'Reduced lists to ' . $number_of_files . ' entr' . ($number_of_files > 1 ? 'ies' : 'y'));
 
   printLog('notice', 'Combining all entries into a single file for sorting');
   $parse_ctr            = 0;
@@ -95,11 +99,12 @@
   $comment_chars = array('#', ';');
   printLog('info', 'Will be skipping lines starting with ' . implode(',', $comment_chars));
 
+  $total_lines = 0;
   foreach ($parse_files as $parse_file) {
     $parse_ctr++;
     // This is where it would regex out the 0.0.0.0 from host files (potentially also remove the http[s]:// from the front if present
     $lines = file($parse_file, FILE_SKIP_EMPTY_LINES | FILE_IGNORE_NEW_LINES);
-    printLog('debug', sprintf('Loaded \'%s\', has %d lines (inc. commentds)', $parse_file, count($lines)));
+    printLog('debug', sprintf('Loaded \'%s\', has %d lines (inc. comments)', $parse_file, count($lines)));
     $non_comment_lines = 0;
     foreach ($lines as $line) {
       $first_char = substr(trim($line), 0, 1);
@@ -109,7 +114,7 @@
         // we know it will contain a space, so we'll explode on that and use the last part which should be the domain
         $parts = explode(' ', $line);
         if (count($parts) > 1) {
-          $line = array_shift($parts);
+          $line = array_pop($parts);
         }
         $hash = md5($line);
         // TODO actually use the stats to give something to the user?
@@ -119,29 +124,33 @@
         $deduplicated_records[$hash]['hits']++;
       }
     }
+    $total_lines += $non_comment_lines;
     printLog('progress', sprintf('Processed %s of %s (%d lines added)', $parse_ctr, $number_of_files, $non_comment_lines));
   }
 
-  // Combine files / Gather stats
-//  print_r($output_records);
-  printLog('info', 'Narrowed lists down to ' . count($deduplicated_records) . ' records');
-  $full_path = $out_dir . DIRECTORY_SEPARATOR . $output_file_name;
-  printLog('info', 'Creating single file (' . $full_path . ')');
-
-  $header       = array(
-    '################################################################### ',
-    '# File made by pihole-blocklist-manager as ' . date('Y-m-d H:i.s'),
-    '# Built from ' . $number_of_files . ' files, ~' . count($deduplicated_records) . ' lines parsed',
-    '################################################################### ',
-    '',
-    '',
+  printLog('stats', sprintf('Narrowed lists down from %d to %s lines, %01.2f%% reduction',
+    $total_lines,
+    count($deduplicated_records),
+    100 - ((count($deduplicated_records) / $total_lines) * 100)) // this seems wrong?
   );
+  #endregion Parsing Files
+
+  #region Combine files / Stats
   $output_lines = array();
-  // could be array walk?
+  $max_hit_url  = null;
+  $max_hit_ctr  = 0;
+
   foreach ($deduplicated_records as $deduplicated_record) {
+    if ($deduplicated_record['hits'] > $max_hit_ctr) {
+      $max_hit_url = $deduplicated_record['url'];
+      $max_hit_ctr = $deduplicated_record['hits'];
+    }
     $output_lines[] = $deduplicated_record['url'];
   }
+  printLog('stats', sprintf('Highest was %d hits for %s', $max_hit_ctr, $max_hit_url));
   sort($output_lines); // sort the output array
+  #endregion Combine files / Stats
+
   #region Adding Blacklist Domains
   if (isset($config['blacklist-domains']) && count($config['blacklist-domains'])) {
     printLog('info', 'Adding user blacklisted domains');
@@ -154,7 +163,7 @@
         $output_lines[] = $blacklist_domain; // we add it onto the original list
         $message_part   = 'is now';
       }
-      printLog('blk-dom', sprintf($message, $message_part));
+      printLog('user-blacklist', sprintf($message, $message_part));
     }
     sort($output_lines);
   }
@@ -173,18 +182,29 @@
         unset($output_lines[$position]);
         $message_part = 'has been removed (from position ' . $position . ')';
       }
-      printLog('blk-dom', sprintf($message, $message_part));
+      printLog('user-whitelist', sprintf($message, $message_part));
     }
     // no need to sort here, as we'd still be in order, just missing a few entries
   }
   #region Removing whitelisted domains
 
+  #region Output
+  $full_path = $out_dir . DIRECTORY_SEPARATOR . $output_file_name;
+  printLog('info', 'Creating single file (' . $full_path . ')');
+  $header = array(
+    '################################################################### ',
+    '# File made by pihole-blocklist-manager at ' . date('Y-m-d H:i.s'),
+    '# Built from ' . $number_of_files . ' files, resulting in ~' . count($output_lines) . ' lines',
+    '################################################################### ',
+    '',
+    '',
+  );
 
   file_put_contents($full_path, implode(PHP_EOL, $header));
   file_put_contents($full_path, implode(PHP_EOL, $output_lines), FILE_APPEND);
 
-
   printLog('info', 'Done!');
+  #endregion Output
 
   #region Handy Functions
   /**
