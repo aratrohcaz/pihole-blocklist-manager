@@ -3,6 +3,8 @@
 -----------------------------------
 
 ## [Unreleased]
+
+## [v0.2.0]
 ### Added
   - Displaying of memory usage in log output
 ### Fixed
@@ -19,4 +21,5 @@
 
 
 [Unreleased]: https://github.com/aratrohcaz/pihole-blocklist-manager/compare/master...develop
+[v0.2.0]: https://github.com/aratrohcaz/pihole-blocklist-manager/compare/v0.2.0...develop
 [v0.1.0]: https://github.com/aratrohcaz/pihole-blocklist-manager/compare/v0.1.0...develop
