@@ -91,6 +91,8 @@
   $parse_files     = array_unique(array_merge($downloaded_files, $existing_files));
   $number_of_files = count($parse_files);
   printLog('stats', 'Reduced lists to ' . $number_of_files . ' entr' . ($number_of_files > 1 ? 'ies' : 'y'));
+  // variable cleanup
+  unset($existing_files, $downloaded_files);
 
   printLog('notice', 'Combining all entries into a single file for sorting');
   $parse_ctr            = 0;
@@ -125,6 +127,8 @@
     }
     $total_lines += $non_comment_lines;
     printLog('progress', sprintf('Processed %s of %s (%d lines added)', $parse_ctr, $number_of_files, $non_comment_lines));
+    // Remove the lines of the file from memory, any others no longer used
+    unset($lines, $line, $hash, $first_char, $non_comment_lines);
   }
 
   printLog('stats', sprintf('Narrowed lists down from %d to %s lines, %01.2f%% reduction',
@@ -146,6 +150,7 @@
     }
     $output_lines[] = $deduplicated_record['url'];
   }
+  unset($deduplicated_records);
   printLog('stats', sprintf('Highest was %d hits for %s', $max_hit_ctr, $max_hit_url));
   sort($output_lines); // sort the output array
   #endregion Combine files / Stats
@@ -162,8 +167,9 @@
         $output_lines[] = $blacklist_domain; // we add it onto the original list
         $message_part   = 'is now';
       }
-      printLog('user-blacklist', sprintf($message, $message_part));
+      printLog('blacklist', sprintf($message, $message_part));
     }
+    unset($current_lines); // We don't need this any more
     sort($output_lines);
   }
   #endregion Adding Blacklist Domains
@@ -181,10 +187,12 @@
         unset($output_lines[$position]);
         $message_part = 'has been removed (from position ' . $position . ')';
       }
-      printLog('user-whitelist', sprintf($message, $message_part));
+      printLog('whitelist', sprintf($message, $message_part));
     }
+    unset($current_lines); // We don't need this any more
     // no need to sort here, as we'd still be in order, just missing a few entries
   }
+
   #region Removing whitelisted domains
 
   #region Output
@@ -246,9 +254,29 @@
    *
    * @void
    */
-  function printLog($section = 'info', $message = '')
+  function printLog($section = 'info', $message = '', $show_timestamp = false)
   {
-    printf(' %-15s >> %s' . PHP_EOL, $section, $message);
+    $memory_usage = memory_get_usage(true);
+    $memory_unit  = 'b';
+    switch ($memory_usage) {
+      case  ($memory_usage < 1024):
+        break;
+      case ($memory_usage < 1048576):
+        $memory_usage = round($memory_usage / 1024, 2);
+        $memory_unit  = 'K';
+        break;
+      case ($memory_usage >= 1048576):
+        $memory_usage = round($memory_usage / 1048576, 2);
+        $memory_unit  = 'M';
+        break;
+    }
+
+    $timestamp = '';
+    if ($show_timestamp) {
+      $timestamp = date('Y-m-d H:i.s') . ' ';
+    }
+
+    printf(' > %s%-12s [ %6.2f%s ] >> %s ' . PHP_EOL, $timestamp, $section, $memory_usage, $memory_unit, $message);
   }
 
   #endregion Handy Functions
