@@ -19,5 +19,4 @@ Tested and running on PHP 5.4.16 on CentOS Linux 7.4.1708.
 ## Current Issues
  - Runs out of memory/no memory profiling
     - Fails with < 128MB memory set in `php.ini` when outputting file.
- - Throws warning if `php.ini` is not setup correctly (related to timezones)
  - creating/destruction of many (cURL) resources

@@ -23,6 +23,13 @@
    * 12 - Info about how many lines had been saved
    */
 
+  #region Check for timezone being set
+  if (strlen(ini_get('date.timezone')) === 0) {
+    ini_set('date.timezone', 'UTC');
+    printLog('warning', 'Timezone not set in php.ini, using timezone UTC');
+  }
+  #endregion Check for timezone being set
+
   #region Rudimentary settings area
   $timestamp        = date('Ymd_his');
   $output_file_name = 'compiled.txt';

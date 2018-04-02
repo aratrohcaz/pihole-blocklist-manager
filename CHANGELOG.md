@@ -3,6 +3,8 @@
 -----------------------------------
 
 ## [Unreleased]
+### Fixed
+  - Fixed hitting warning if no timezone is set in php.ini
 
 ## [v0.1.0]
 ### Added
