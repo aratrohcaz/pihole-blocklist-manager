@@ -17,5 +17,4 @@ Tested and running on PHP 5.4.16 on CentOS Linux 7.4.1708.
  6. Get pi-hole to update from your blacklist
 
 ## Current Issues
- - Throws warning if `php.ini` is not setup correctly (related to timezones)
  - creating/destruction of many (cURL) resources

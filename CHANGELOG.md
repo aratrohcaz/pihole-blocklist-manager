@@ -7,6 +7,7 @@
   - Displaying of memory usage in log output
 ### Fixed
   - High Memory usage, still uses a lot but should be able to manage more lists now
+  - Fixed hitting warning if no timezone is set in php.ini
 
 ## [v0.1.0]
 ### Added
