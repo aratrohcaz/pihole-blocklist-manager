@@ -1,25 +1,23 @@
-### PiHole Blacklist Conglomerator
+### PiHole Blacklist Manager
 -----------------------------------
 
 ## Preface
-Ok, so, this is a work in progress, essentially a very simple system for collating your lists and to reduce the amount of entries/work that pihole has to do.
+This is a quick and dirty version of simple block-list collator. 
 
-I'm running php7.0 but am writing this in mind to run on most php versions and trying to keep dependancies as minimal as possible, so bear with me.
+Some users maintain server Piholes and I thought this would be a nice challenge for some simple PHP code to create one list that all their remote deployments can pull from (essentially to cut down on maintenance). While the teleporter function ality of PiHole is nice, this will allow for the `cron` on each deployment to keep a single user maintained list up to date. 
 
-I thought about having the list stored locally on the pihole, but some people run multiple pi-holes, and manage others. This gives an easier method/way to manage them all/keep them in sync (in theory, I haven't tested this yet)
+Tested and running on PHP 5.4.16 on CentOS Linux 7.4.1708. 
 
 ## How to use
- - Fork this project
- - Add the urls to `blocklist-in.list` that you want to pull lists from
- - Add any custom urls to your block list to `blocklist-manual.list`
- - Add any whitelist urls/domains to `whitelist-manual.list`
- - Run `make blacklist`
- - Push the blacklist to your repo (the diff should be kind of cool)
- - Get pi-hole to update your blacklist
+ 1. Fork/download this project
+ 2. Create a `config.ini` based off of `sample-config.ini` (it will be created automatically if it doesn't exists)
+ 3. Run `php run.php`
+ 4. Watch and wait for it to finish it's thing
+ 5. Push the blacklist to your repo (the diff should be kind of cool)
+ 6. Get pi-hole to update from your blacklist
 
-## Upcoming changes
- - tagged release
- - bash/shell compatible functions
- - HEADing request/check for differences (might not be possible)
- - other cool functions (auto updating pihole et al)
-
+## Current Issues
+ - Runs out of memory/no memory profiling
+    - Fails with < 128MB memory set in `php.ini` when outputting file.
+ - Throws warning if `php.ini` is not setup correctly (related to timezones)
+ - creating/destruction of many (cURL) resources
